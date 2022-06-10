@@ -5,6 +5,7 @@ const AuthenticationController = require('../app/controllers/AuthenticationContr
 const ApplicationController = require('../app/controllers/ApplicationController');
 const NotFoundError = require('../app/errors/NotFoundError');
 const RecordNotFoundError = require('../app/errors/RecordNotFoundError');
+const EmailNotRegisteredError = require('../app/errors/EmailNotRegisteredError');
 
 describe('CarController', () => {
   describe('#handleCreateCar', () => {
@@ -323,6 +324,41 @@ describe('AuthenticationController', () => {
 
       expect(mockUserModel.findByPk).toHaveBeenCalledWith(1);
       expect(mockResponse.status).toHaveBeenCalledWith(404);
+      expect(mockResponse.json).toHaveBeenCalledWith(err);
+    });
+  });
+
+  describe('#handleRegister', () => {
+    it('should call res.status(422) and error because email already  taken', async () => {
+      const name = 'erlina';
+      const email = 'erlina@gmail.com';
+      const image = 'erlina-ava.png';
+      const password = '123456';
+      const encryptedPassword = bcrypt.hashSync(password, 10);
+      const err = new Error(`${email} already taken`);
+      const roleId = 'ADMIN';
+
+      const mockRequest = {
+        body: {
+          email,
+          password,
+        },
+      };
+
+      const mockUser = new User({
+        name, email, image, encryptedPassword, roleId,
+      });
+      const mockUserModel = {};
+      mockUserModel.findOne = jest.fn().mockReturnValue(mockUser);
+
+      const mockResponse = {};
+      mockResponse.status = jest.fn().mockReturnThis();
+      mockResponse.json = jest.fn().mockReturnThis();
+
+      // eslint-disable-next-line max-len
+      const authenticationController = new AuthenticationController({ userModel: mockUserModel });
+      await authenticationController.handleRegister(mockRequest, mockResponse);
+      expect(mockResponse.status).toHaveBeenCalledWith(422);
       expect(mockResponse.json).toHaveBeenCalledWith(err);
     });
   });
